@@ -7,15 +7,17 @@ import (
 )
 
 type Container struct {
-	Image      string
-	Tag        string
-	Env        map[string]string
-	Volumes    map[string]string
-	WorkingDir string
-	Retry      func() error
+	Image    string
+	Tag      string
+	Env      map[string]string
+	Volumes  map[string]string
+	Workpath string
+	Workdir  string
+	Retry    func() error
+	Resource *dockertest.Resource
 }
 
-func (c *Container) RequireContainer(exe func(*dockertest.Resource) error) (err error) {
+func (c *Container) RequireContainer(exe func(*Container) error) (err error) {
 	// uses a sensible default on windows (tcp/http) and linux/osx (socket)
 	pool, err := dockertest.NewPool("")
 	if err != nil {
@@ -36,21 +38,26 @@ func (c *Container) RequireContainer(exe func(*dockertest.Resource) error) (err 
 		i++
 	}
 
-	mounts := make([]string, len(c.Volumes))
+	mounts := make([]string, len(c.Volumes)+1)
 	i = 0
+	mounts[i] = fmt.Sprintf("%s:%s", c.Workpath, c.Workdir)
+	i++
 	for k, v := range c.Volumes {
 		mounts[i] = fmt.Sprintf("%s:%s", k, v)
 		i++
 	}
 
-	fmt.Printf("volumes: %+v\n", mounts)
+	fmt.Printf("image %s:%s\n", c.Image, c.Tag)
+	fmt.Printf("env vars: %+v\n", env)
+	fmt.Printf("volume mounts: %+v\n", mounts)
+	fmt.Printf("workdir: %s\n", c.Workdir)
 
 	// pulls an image, creates a container based on it and runs it
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: c.Image,
 		Tag:        c.Tag,
 		Env:        env,
-		WorkingDir: c.WorkingDir,
+		WorkingDir: c.Workdir,
 		Mounts:     mounts,
 		Entrypoint: []string{"tail", "-f", "/dev/null"},
 	})
@@ -70,8 +77,12 @@ func (c *Container) RequireContainer(exe func(*dockertest.Resource) error) (err 
 		}
 	}
 
-	if err = exe(resource); err != nil {
+	if err = exe(c); err != nil {
 		return
 	}
 	return
+}
+
+func (c *Container) GetResource() *dockertest.Resource {
+	return c.Resource
 }

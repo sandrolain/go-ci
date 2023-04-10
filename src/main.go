@@ -2,64 +2,44 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"time"
-
-	"github.com/ory/dockertest/v3"
 )
 
 func main() {
 
 	p := Pipeline{
-		URL:     "https://github.com/sandrolain/sdt.git",
+		URL:     "https://github.com/sandrolain/go-ci-example.git",
 		RefType: RefTypeBranch,
 		Ref:     "main",
 	}
 
-	cwd, err := os.Getwd()
+	err := p.SetupWorkpath()
 	if err != nil {
 		panic(err)
 	}
-	temp := fmt.Sprintf("%s/temp", cwd)
 
-	t := time.Now()
-	ts := t.Format("20060102150405")
+	err = p.Clone()
+	if err != nil {
+		panic(err)
+	}
 
-	dest := fmt.Sprintf("%s/p_%s", temp, ts)
-
-	os.MkdirAll(dest, 0700)
-	defer os.RemoveAll(dest)
-
-	err = p.Clone(dest)
+	ci, err := p.GetCI()
 	if err != nil {
 		panic(err)
 	}
 
 	c := Container{
-		Image:      "golang",
-		Tag:        "1.20.3",
-		WorkingDir: "/workdir",
-		Volumes: map[string]string{
-			dest: "/workdir",
-		},
+		Image:    ci.Image,
+		Tag:      ci.Tag,
+		Workpath: p.GetWorkpath(),
+		Workdir:  ci.GetWorkdir(),
+		Volumes:  ci.Volumes,
 	}
 
-	commands := [][]string{
-		{"ls"},
-		{"sh", "./test.sh"},
-	}
-
-	err = c.RequireContainer(func(r *dockertest.Resource) error {
-		for i, cmd := range commands {
-			code, err := r.Exec(cmd, dockertest.ExecOptions{
-				StdOut: os.Stdout,
-				StdErr: os.Stderr,
-			})
+	err = c.RequireContainer(func(c *Container) error {
+		for i, s := range ci.Steps {
+			err := s.Run(c)
 			if err != nil {
-				return fmt.Errorf("cmd %v: error: %w", i, err)
-			}
-			if code > 0 {
-				return fmt.Errorf("cmd %v: exit code: %d", i, code)
+				return fmt.Errorf("error execution step %d: %w", i, err)
 			}
 		}
 		return nil

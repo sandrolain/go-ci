@@ -1,0 +1,3 @@
+[submodule "go-ci-example"]
+	path = go-ci-example
+	url = https://github.com/sandrolain/go-ci-example

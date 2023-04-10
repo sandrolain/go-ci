@@ -4,7 +4,9 @@ go 1.20
 
 require (
 	github.com/go-git/go-git/v5 v5.6.1
+	github.com/mattn/go-shellwords v1.0.12
 	github.com/ory/dockertest/v3 v3.9.1
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
