@@ -17,6 +17,8 @@ func main() {
 		panic(err)
 	}
 
+	defer p.Cleanup()
+
 	err = p.Clone()
 	if err != nil {
 		panic(err)
@@ -28,11 +30,13 @@ func main() {
 	}
 
 	c := Container{
+		ID:       p.GetTimestamp(),
 		Image:    ci.Image,
 		Tag:      ci.Tag,
 		Workpath: p.GetWorkpath(),
 		Workdir:  ci.GetWorkdir(),
 		Volumes:  ci.Volumes,
+		Timeout:  ci.Timeout,
 	}
 
 	err = c.RequireContainer(func(c *Container) error {

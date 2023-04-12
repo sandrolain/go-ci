@@ -20,11 +20,12 @@ const (
 )
 
 type Pipeline struct {
-	URL      string
-	RefType  RefType
-	Ref      string
-	CI       PipelineCI
-	workpath string
+	URL       string
+	RefType   RefType
+	Ref       string
+	CI        PipelineCI
+	timestamp string
+	workpath  string
 }
 
 func (p *Pipeline) SetupWorkpath() (err error) {
@@ -38,12 +39,18 @@ func (p *Pipeline) SetupWorkpath() (err error) {
 	ts := t.Format("20060102150405")
 	dest := fmt.Sprintf("%s/p_%s", temp, ts)
 
+	p.timestamp = ts
+
 	err = os.MkdirAll(dest, 0700)
 	if err != nil {
 		return
 	}
 	p.workpath = dest
 	return
+}
+
+func (p *Pipeline) GetTimestamp() string {
+	return p.timestamp
 }
 
 func (p *Pipeline) GetWorkpath() string {
@@ -115,11 +122,12 @@ func (p *Pipeline) GetCI() (*PipelineCI, error) {
 }
 
 type PipelineCI struct {
-	Image   string
-	Tag     string
-	Workdir string
-	Volumes map[string]string
-	Steps   []Step
+	Image   string            `yaml:"image"`
+	Tag     string            `yaml:"tag"`
+	Workdir string            `yaml:"workdir"`
+	Volumes map[string]string `yaml:"volumes"`
+	Steps   []Step            `yaml:"steps"`
+	Timeout uint              `yaml:"timeout"`
 }
 
 func (p *PipelineCI) GetWorkdir() string {

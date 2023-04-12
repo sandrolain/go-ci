@@ -22,8 +22,7 @@ func (s *Step) Run(c *Container) error {
 		if err != nil {
 			return fmt.Errorf("cmd %v: cannot parse '%s': error: %w", i, cmd, err)
 		}
-		fmt.Printf("%+v\n", s)
-		fmt.Printf("exec command '%s', %d words %+v\n", cmd, len(words), words)
+		fmt.Printf("exec command '%s'\n", cmd)
 		code, err := r.Exec(words, dockertest.ExecOptions{
 			StdOut: os.Stdout,
 			StdErr: os.Stderr,
